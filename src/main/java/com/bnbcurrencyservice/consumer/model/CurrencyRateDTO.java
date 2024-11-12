@@ -13,4 +13,3 @@ public class CurrencyRateDTO {
     private Integer ratio;
     private BigDecimal reverseRate;
 }
-§
