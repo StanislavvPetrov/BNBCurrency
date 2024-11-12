@@ -1,7 +1,6 @@
 package com.bnbcurrencyservice.fetcher.service;
 
 import com.bnbcurrencyservice.fetcher.model.CurrencyRate;
-import com.ibm.icu.text.Transliterator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.*;
@@ -19,8 +18,6 @@ import java.util.List;
 @Slf4j
 @Service
 public class XmlParserService {
-
-    private static final Transliterator TO_LATIN = Transliterator.getInstance("Cyrillic-Latin");
 
     public List<CurrencyRate> parseXmlData(String xmlData) throws Exception {
         List<CurrencyRate> rates = new ArrayList<>();
@@ -53,8 +50,8 @@ public class XmlParserService {
         rate.setExtraInfo(getElementValue(rowElement, "EXTRAINFO"));
         rate.setFStar(getElementValue(rowElement, "F_STAR"));
         rate.setGold(getElementValue(rowElement, "GOLD"));
-        rate.setNameBg(getElementValue(rowElement, "NAME_"));
-        rate.setNameEn(transliterateUsingIcu(rate.getNameBg()));
+        rate.setNameBg(getElementValue(rowElement, "NAME_BG"));
+        rate.setNameEn(getElementValue(rowElement, "NAME_EN"));
         rate.setTitle(getElementValue(rowElement, "TITLE"));
         rate.setRate(parseDecimal(getElementValue(rowElement, "RATE")));
         rate.setRatio(parseInt(getElementValue(rowElement, "RATIO")));
@@ -106,12 +103,5 @@ public class XmlParserService {
             log.warn("Failed to parse integer: {}", value);
             return null;
         }
-    }
-
-    private String transliterateUsingIcu(String nameBg) {
-        if (nameBg == null) {
-            return null;
-        }
-        return TO_LATIN.transliterate(nameBg);
     }
 }
