@@ -1,7 +1,7 @@
 package com.bnbcurrencyservice.consumer.listener;
 
 import com.bnbcurrencyservice.consumer.model.CurrencyRateDTO;
-import com.bnbcurrencyservice.consumer.repository.CurrencyRateRepository;
+import com.bnbcurrencyservice.consumer.service.CurrencyStorageService;
 import com.bnbcurrencyservice.fetcher.model.CurrencyRate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -18,17 +18,15 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class CurrencyRateListener extends TextWebSocketHandler {
 
-    private final CurrencyRateRepository repository;
+    private final CurrencyStorageService currencyStorageService;
     private final ObjectMapper objectMapper;
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) {
         try {
             CurrencyRateDTO currencyRateDTO = objectMapper.readValue(message.getPayload(), CurrencyRateDTO.class);
-
             CurrencyRate currencyRate = convertToEntity(currencyRateDTO);
-
-            repository.save(currencyRate);
+            currencyStorageService.saveCurrencyRate(currencyRate);
             log.info("Currency rate saved: {}", currencyRate);
 
         } catch (Exception e) {

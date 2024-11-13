@@ -3,6 +3,7 @@ package com.bnbcurrencyservice.fetcher.service;
 import com.bnbcurrencyservice.fetcher.model.CurrencyRate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.w3c.dom.*;
 import org.xml.sax.InputSource;
 
@@ -18,6 +19,18 @@ import java.util.List;
 @Slf4j
 @Service
 public class XmlParserService {
+
+    private static final String CURRENCY_DATA_URL = "https://example.com/currencydata.xml";
+
+    public String fetchCurrencyData() {
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            return restTemplate.getForObject(CURRENCY_DATA_URL, String.class);
+        } catch (Exception e) {
+            log.error("Failed to fetch data: ", e);
+            throw new RuntimeException("Failed to fetch data", e);
+        }
+    }
 
     public List<CurrencyRate> parseXmlData(String xmlData) throws Exception {
         List<CurrencyRate> rates = new ArrayList<>();
