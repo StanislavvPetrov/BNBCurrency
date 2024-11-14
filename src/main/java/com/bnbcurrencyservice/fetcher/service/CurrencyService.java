@@ -9,8 +9,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
-import java.util.List;
-import java.util.Optional;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -23,13 +23,20 @@ public class CurrencyService {
     private final SimpMessagingTemplate websocket;
     private final RestTemplate restTemplate;
 
-    private static final String BNB_URL = "https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies/index.htm?download=xml&search=&lang=BG";
+    // URL за XML данните на български и английски
+    private static final String BNB_URL_BG = "https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies/index.htm?download=xml&search=&lang=BG";
+    private static final String BNB_URL_EN = "https://www.bnb.bg/Statistics/StExternalSector/StExchangeRates/StERForeignCurrencies/index.htm?download=xml&search=&lang=EN";
 
     @Transactional
     public void downloadAndProcessCurrencies() {
         try {
-            String xmlData = downloadXmlData();
-            List<CurrencyRate> newRates = xmlParserService.parseXmlData(xmlData);
+            String xmlDataBg = downloadXmlData(BNB_URL_BG);
+            String xmlDataEn = downloadXmlData(BNB_URL_EN);
+
+            List<CurrencyRate> newRatesBg = xmlParserService.parseXmlData(xmlDataBg);
+            List<CurrencyRate> newRatesEn = xmlParserService.parseXmlData(xmlDataEn);
+
+            List<CurrencyRate> newRates = mergeCurrencyRates(newRatesBg, newRatesEn);
 
             if (hasRatesChanged(newRates)) {
                 log.info("New currency rates detected. Saving {} rates", newRates.size());
@@ -50,8 +57,8 @@ public class CurrencyService {
         }
     }
 
-    private String downloadXmlData() {
-        return restTemplate.getForObject(BNB_URL, String.class);
+    private String downloadXmlData(String url) {
+        return restTemplate.getForObject(url, String.class);
     }
 
     private boolean hasRatesChanged(List<CurrencyRate> newRates) {
@@ -81,5 +88,19 @@ public class CurrencyService {
         dto.setRatio(rate.getRatio());
         dto.setReverseRate(rate.getReverseRate());
         return dto;
+    }
+
+    private List<CurrencyRate> mergeCurrencyRates(List<CurrencyRate> ratesBg, List<CurrencyRate> ratesEn) {
+        Map<String, CurrencyRate> ratesMap = ratesBg.stream()
+                .collect(Collectors.toMap(CurrencyRate::getCode, rate -> rate));
+
+        ratesEn.forEach(rateEn -> {
+            CurrencyRate rateBg = ratesMap.get(rateEn.getCode());
+            if (rateBg != null) {
+                rateBg.setNameEn(rateEn.getNameEn());
+            }
+        });
+
+        return new ArrayList<>(ratesMap.values());
     }
 }
